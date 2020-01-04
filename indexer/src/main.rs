@@ -20,7 +20,7 @@ use flate2::read::MultiGzDecoder;
 use indicatif::ProgressBar;
 mod warc_reader;
 use self::warc_reader::WARCReader;
-use tantivy::tokenizer::{Tokenizer, AlphaNumOnlyFilter, SimpleTokenizer, RemoveLongFilter, LowerCaser, Stemmer};
+use tantivy::tokenizer::{Tokenizer, AlphaNumOnlyFilter, SimpleTokenizer, RemoveLongFilter, LowerCaser, Stemmer, Language};
 use std::time::Duration;
 use curl::easy;
 use std::thread;
@@ -30,7 +30,7 @@ use std::path::{Path, PathBuf};
 use std::str;
 use structopt::StructOpt;
 use std::fs;
-use tantivy::{Index, IndexWriter, SegmentMeta, SegmentId};
+use tantivy::{Index, IndexWriter};
 use tantivy::schema::{Schema, SchemaBuilder, TextOptions, TextFieldIndexing, IndexRecordOption, STORED};
 use itertools::Itertools;
 use std::sync::Arc;
@@ -281,7 +281,6 @@ fn merge_all(cli_options: &CliOption    ) -> tantivy::Result<()> {
             .merge(&segment_ids)?.wait()
             .expect("Merge failed");
     }
-    index.load_searchers()?;
     index_writer.garbage_collect_files()?;
     Ok(())
 }
@@ -328,7 +327,7 @@ fn resume_indexing(cli_options: &CliOption) -> tantivy::Result<()> {
             .filter(RemoveLongFilter::limit(40))
             .filter(LowerCaser)
             .filter(AlphaNumOnlyFilter)
-            .filter(Stemmer::new())
+            .filter(Stemmer::new(Language::English))
          );
 
     let index_metas = index.load_metas()?;
