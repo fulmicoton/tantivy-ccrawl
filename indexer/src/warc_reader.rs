@@ -1,17 +1,16 @@
 use std::collections::BTreeMap;
+use std::io::{BufRead, BufReader, Read};
 use std::str;
-use std::io::{Read, BufRead, BufReader};
 
 pub struct WARC {
     pub url: String,
-    pub text: String
+    pub text: String,
 }
-
 
 pub struct WARCReader<R: Read> {
     header: BTreeMap<String, String>,
     buffer: Vec<u8>,
-    reader: BufReader<R>
+    reader: BufReader<R>,
 }
 
 impl<R: Read> Iterator for WARCReader<R> {
@@ -25,8 +24,8 @@ impl<R: Read> Iterator for WARCReader<R> {
             if let Some(url) = self.url() {
                 return Some(WARC {
                     url: url.clone(),
-                    text: self.content().to_string()
-                })
+                    text: self.content().to_string(),
+                });
             }
         }
         None
@@ -34,7 +33,6 @@ impl<R: Read> Iterator for WARCReader<R> {
 }
 
 impl<R: Read> WARCReader<R> {
-
     pub fn new(r: R) -> WARCReader<R> {
         WARCReader {
             header: BTreeMap::new(),
@@ -68,17 +66,25 @@ impl<R: Read> WARCReader<R> {
             {
                 let fields = line.trim().splitn(2, ":").collect::<Vec<&str>>();
                 if fields.len() == 2 {
-                    self.header.insert(fields[0].to_string(), fields[1].trim().to_string());
+                    self.header
+                        .insert(fields[0].to_string(), fields[1].trim().to_string());
                 } else {
                     break;
                 }
             }
             line.clear();
         }
-        let content_len_str = self.header.get("Content-Length").expect("Content length not found");
-        let content_len: usize = content_len_str.parse().expect("Failed to parse content len");
+        let content_len_str = self
+            .header
+            .get("Content-Length")
+            .expect("Content length not found");
+        let content_len: usize = content_len_str
+            .parse()
+            .expect("Failed to parse content len");
         self.buffer.resize(content_len, 0u8);
-        self.reader.read_exact(&mut self.buffer[..]).expect("Failed to read content");
+        self.reader
+            .read_exact(&mut self.buffer[..])
+            .expect("Failed to read content");
         true
     }
 }
